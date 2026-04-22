@@ -168,6 +168,56 @@ The API will be available at `http://localhost:8080`.
 ```bash
 ./mvnw test
 ```
-##  Test the endpoints with curl in another terminal
+
+## Test the endpoints with curl in another terminal
+
+If you are using Windows PowerShell, use `curl.exe` instead of `curl` so PowerShell does not rewrite the command.
+
+These examples assume you just restarted the app, so the first created movie gets `id = 1`.
+
+```powershell
+# 1. POST — create a movie
+@'
+{"title":"Arrival","director":"Denis Villeneuve","releaseYear":2016}
+'@ | Set-Content movie-create.json -NoNewline
+curl.exe -s -X POST http://localhost:8080/api/movies `
+	-H "Content-Type: application/json" `
+	--data-binary "@movie-create.json" `
+	-w "`nHTTP %{http_code}`n"
+# Expect: {"id":1,"title":"Arrival",...}  HTTP 201
+
+# 2. GET all movies
+curl.exe -s http://localhost:8080/api/movies -w "`nHTTP %{http_code}`n"
+# Expect: [{"id":1,...}]  HTTP 200
+
+# 3. GET one movie
+curl.exe -s http://localhost:8080/api/movies/1 -w "`nHTTP %{http_code}`n"
+# Expect: {"id":1,...}  HTTP 200
+
+# 4. GET missing — must NOT return 200 or 500
+curl.exe -s http://localhost:8080/api/movies/99 -w "`nHTTP %{http_code}`n"
+# Expect: Movie with ID 99 not found  HTTP 404
+
+# 5. PUT — update the release year
+@'
+{"title":"Arrival","director":"Denis Villeneuve","releaseYear":2017}
+'@ | Set-Content movie-update.json -NoNewline
+curl.exe -s -X PUT http://localhost:8080/api/movies/1 `
+	-H "Content-Type: application/json" `
+	--data-binary "@movie-update.json" `
+	-w "`nHTTP %{http_code}`n"
+# Expect: {"id":1,"releaseYear":2017,...}  HTTP 200
+
+# 6. DELETE
+curl.exe -s -X DELETE http://localhost:8080/api/movies/1 -w "`nHTTP %{http_code}`n"
+# Expect: (empty body)  HTTP 204
+
+# 7. GET after DELETE — confirm it is gone
+curl.exe -s http://localhost:8080/api/movies/1 -w "`nHTTP %{http_code}`n"
+# Expect: Movie with ID 1 not found  HTTP 404
+
+Remove-Item movie-create.json, movie-update.json
+```
+
 ---
 
